@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMAF-OSB | Global Multidisciplinary Assessment Framework</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root { --primary:#0d9488; --primary-dark:#0f766e; --primary-light:#ccfbf1; --secondary:#1e293b; --accent-ot:#f97316; --accent-st:#6366f1; --accent-bt:#e11d48; --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --bg:#f8fafc; --card:#fff; --border:#e2e8f0; --text:#0f172a; --text-muted:#64748b; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+.app-container { display:flex; min-height:100vh; }
+.sidebar { width:260px; background:var(--secondary); color:white; position:fixed; height:100vh; overflow-y:auto; z-index:100; }
+.sidebar-header { padding:24px; border-bottom:1px solid rgba(255,255,255,0.1); }
+.sidebar-logo { display:flex; align-items:center; gap:12px; }
+.logo-icon { width:40px; height:40px; background:var(--primary); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; }
+.sidebar-nav { padding:16px 12px; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:8px; cursor:pointer; transition:all 0.2s; margin-bottom:4px; color:rgba(255,255,255,0.7); font-size:14px; font-weight:500; }
+.nav-item:hover { background:rgba(255,255,255,0.05); color:white; }
+.nav-item.active { background:var(--primary); color:white; }
+.nav-item svg { width:20px; height:20px; opacity:0.8; }
+.sidebar-footer { padding:16px; border-top:1px solid rgba(255,255,255,0.1); font-size:12px; color:rgba(255,255,255,0.4); text-align:center; }
+.main-content { margin-left:260px; flex:1; min-height:100vh; }
+.top-bar { background:white; border-bottom:1px solid var(--border); padding:16px 32px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:50; }
+.page-title h1 { font-size:20px; font-weight:700; }
+.page-title p { font-size:13px; color:var(--text-muted); }
+.top-actions { display:flex; gap:12px; align-items:center; }
+.badge { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-hipaa { background:#dcfce7; color:#166534; }
+.badge-gdpr { background:#dbeafe; color:#1e40af; }
+.badge-pending { background:#fef3c7; color:#92400e; }
+.badge-complete { background:#dcfce7; color:#166534; }
+.badge-severe { background:#fee2e2; color:#991b1b; }
+.badge-moderate { background:#ffedd5; color:#9a3412; }
+.badge-low { background:#d1fae5; color:#065f46; }
+.content-area { padding:24px 32px; max-width:1400px; }
+.card { background:white; border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.04); overflow:hidden; }
+.card-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.card-title { font-size:16px; font-weight:600; }
+.card-body { padding:24px; }
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:24px; }
+.stat-card { background:white; border-radius:12px; border:1px solid var(--border); padding:20px; display:flex; align-items:center; gap:16px; }
+.stat-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+.stat-icon.blue { background:#eff6ff; color:#2563eb; }
+.stat-icon.amber { background:#fffbeb; color:#d97706; }
+.stat-icon.emerald { background:#ecfdf5; color:#059669; }
+.stat-icon.rose { background:#fff1f2; color:#e11d48; }
+.stat-value { font-size:24px; font-weight:700; line-height:1; }
+.stat-label { font-size:13px; color:var(--text-muted); margin-top:4px; }
+.data-table { width:100%; border-collapse:collapse; font-size:14px; }
+.data-table th { text-align:left; padding:12px 24px; background:#f8fafc; font-weight:600; color:var(--text-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
+.data-table td { padding:14px 24px; border-bottom:1px solid var(--border); }
+.data-table tr:hover td { background:#f8fafc; }
+.data-table tr:last-child td { border-bottom:none; }
+.form-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group.full { grid-column:1/-1; }
+.form-label { font-size:13px; font-weight:600; color:var(--text); }
+.form-label span { color:var(--danger); }
+.form-input,.form-select,.form-textarea { padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit; transition:all 0.2s; background:white; }
+.form-input:focus,.form-select:focus,.form-textarea:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(13,148,136,0.1); }
+.form-textarea { resize:vertical; min-height:80px; }
+.checkbox-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.checkbox-item { display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--border); border-radius:8px; cursor:pointer; transition:all 0.2s; font-size:14px; }
+.checkbox-item:hover { border-color:var(--primary); background:var(--primary-light); }
+.checkbox-item input[type="checkbox"] { width:18px; height:18px; accent-color:var(--primary); cursor:pointer; }
+.question-block { margin-bottom:24px; padding-bottom:24px; border-bottom:1px solid var(--border); }
+.question-block:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+.question-text { font-weight:500; margin-bottom:12px; display:flex; align-items:flex-start; gap:8px; }
+.question-number { background:var(--primary-light); color:var(--primary-dark); width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+.rating-scale { display:flex; gap:8px; flex-wrap:wrap; }
+.rating-option { padding:8px 16px; border:2px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; text-align:center; min-width:100px; }
+.rating-option:hover { border-color:var(--primary); }
+.rating-option.selected { background:var(--primary); color:white; border-color:var(--primary); }
+.rating-option.severe.selected { background:var(--danger); border-color:var(--danger); }
+.rating-option.moderate.selected { background:var(--warning); border-color:var(--warning); color:white; }
+.rating-option.mild.selected { background:var(--success); border-color:var(--success); }
+.tabs { display:flex; gap:4px; background:#f1f5f9; padding:4px; border-radius:10px; width:fit-content; }
+.tab { padding:8px 20px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; border:none; background:transparent; color:var(--text-muted); }
+.tab.active { background:white; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.tab:hover:not(.active) { color:var(--text); }
+.progress-sidebar { background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%); border-radius:12px; padding:24px; color:white; }
+.progress-item { margin-bottom:16px; }
+.progress-item:last-child { margin-bottom:0; }
+.progress-header { display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+.progress-bar-bg { height:6px; background:rgba(255,255,255,0.2); border-radius:3px; overflow:hidden; }
+.progress-bar-fill { height:100%; background:white; border-radius:3px; transition:width 0.5s ease; }
+.severity-card { background:white; border-radius:12px; border:1px solid var(--border); padding:24px; }
+.severity-header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px; }
+.severity-value { font-size:32px; font-weight:800; line-height:1; }
+.severity-bar-bg { height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden; }
+.severity-bar-fill { height:100%; border-radius:4px; transition:width 0.8s ease; }
+.intersection-row { display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr 120px; gap:16px; padding:16px 24px; border-bottom:1px solid var(--border); align-items:center; font-size:14px; }
+.intersection-row.header { background:#f8fafc; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); }
+.intersection-row:last-child { border-bottom:none; }
+.driver-ot { color:var(--accent-ot); font-weight:600; }
+.driver-st { color:var(--accent-st); font-weight:600; }
+.driver-bt { color:var(--accent-bt); font-weight:600; }
+.report-header { background:var(--secondary); color:white; padding:40px; }
+.report-header-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; margin-top:24px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.1); }
+.report-section { padding:32px 40px; border-bottom:1px solid var(--border); }
+.report-section:last-child { border-bottom:none; }
+.report-section-title { font-size:18px; font-weight:700; margin-bottom:16px; color:var(--text); }
+.goal-card { background:#f8fafc; border-left:4px solid var(--primary); padding:16px 20px; border-radius:0 8px 8px 0; margin-bottom:12px; }
+.goal-domain { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--primary); margin-bottom:4px; }
+.goal-text { font-size:14px; font-weight:500; }
+.goal-metric { font-size:12px; color:var(--text-muted); margin-top:4px; }
+.btn { padding:10px 20px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; border:none; display:inline-flex; align-items:center; gap:8px; }
+.btn-primary { background:var(--primary); color:white; }
+.btn-primary:hover { background:var(--primary-dark); }
+.btn-secondary { background:var(--secondary); color:white; }
+.btn-secondary:hover { background:#334155; }
+.btn-outline { background:white; border:1px solid var(--border); color:var(--text); }
+.btn-outline:hover { background:#f8fafc; }
+.btn-success { background:var(--success); color:white; }
+.btn-danger { background:var(--danger); color:white; }
+.btn-sm { padding:6px 14px; font-size:13px; }
+.alert { padding:16px 20px; border-radius:8px; margin-bottom:12px; display:flex; align-items:flex-start; gap:12px; }
+.alert-danger { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; }
+.alert-warning { background:#fffbeb; border:1px solid #fcd34d; color:#92400e; }
+.alert-info { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
+.alert-success { background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; }
+.chart-container { position:relative; height:300px; width:100%; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; display:none; align-items:center; justify-content:center; }
+.modal-overlay.active { display:flex; }
+.modal { background:white; border-radius:16px; width:90%; max-width:600px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); }
+.modal-header { padding:24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.modal-body { padding:24px; }
+.modal-footer { padding:20px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:12px; }
+.toast-container { position:fixed; bottom:24px; right:24px; z-index:300; display:flex; flex-direction:column; gap:8px; }
+.toast { background:var(--secondary); color:white; padding:14px 20px; border-radius:10px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); display:flex; align-items:center; gap:10px; animation:slideIn 0.3s ease; font-size:14px; font-weight:500; }
+@keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+.hidden { display:none !important; }
+.text-center { text-align:center; }
+.mt-4 { margin-top:16px; }
+.mb-4 { margin-bottom:16px; }
+.flex { display:flex; }
+.items-center { align-items:center; }
+.justify-between { justify-content:space-between; }
+.gap-2 { gap:8px; }
+.gap-4 { gap:16px; }
+.w-full { width:100%; }
+.text-sm { font-size:14px; }
+.text-xs { font-size:12px; }
+.font-mono { font-family:ui-monospace,monospace; }
+.text-muted { color:var(--text-muted); }
+@media print { .sidebar,.top-bar,.no-print { display:none !important; } .main-content { margin-left:0; } .content-area { padding:0; max-width:100%; } .card { break-inside:avoid; box-shadow:none; border:1px solid #ddd; } }
+@media (max-width:1024px) { .sidebar { transform:translateX(-100%); transition:transform 0.3s; } .sidebar.open { transform:translateX(0); } .main-content { margin-left:0; } .stats-grid { grid-template-columns:repeat(2,1fr); } .form-grid { grid-template-columns:1fr; } .intersection-row { grid-template-columns:1fr; gap:8px; } .intersection-row.header { display:none; } }
+</style>
+</head>
+<body>
+<div class="app-container">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-logo">
+<div class="logo-icon">G</div>
+<div><div style="font-weight:700;font-size:16px;">GMAF-OSB</div><div style="font-size:11px;opacity:0.6;">Assessment Framework v2.1</div></div>
+</div>
+</div>
+<nav class="sidebar-nav">
+<div class="nav-item active" onclick="navigateTo('dashboard')">
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+Dashboard
+</div>
+<div class="nav-item" onclick="navigateTo('intake')">
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+Intake & Profile
+</div>
+<div class="nav-item" onclick="navigateTo('assessment')">
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+Assessments
+</div>
+<div class="nav-item" onclick="navigateTo('analysis')">
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+Analysis
+</div>
+<div class="nav-item" onclick="navigateTo('reports')">
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+Reports
+</div>
+<div class="nav-item" onclick="navigateTo('settings')">
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+Settings
+</div>
+</nav>
+<div class="sidebar-footer">
+<div style="margin-bottom:8px;">GMAF-OSB v2.1.0</div>
+<div>Licensed for Commercial Use</div>
+</div>
+</aside>
+
+<div class="main-content">
+<header class="top-bar no-print">
+<div class="page-title">
+<h1 id="page-title">Dashboard</h1>
+<p id="page-subtitle">Overview of all clinical activities</p>
+</div>
+<div class="top-actions">
+<span class="badge badge-hipaa">HIPAA Compliant</span>
+<span class="badge badge-gdpr">GDPR Ready</span>
+<button class="btn btn-primary btn-sm" onclick="showNewClientModal()">
+<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+New Client
+</button>
+</div>
+</header>
+
+<div class="content-area">
+
+<!-- DASHBOARD -->
+<div id="view-dashboard">
+<div class="stats-grid">
+<div class="stat-card">
+<div class="stat-icon blue">
+<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+</div>
+<div><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total Clients</div></div>
+</div>
+<div class="stat-card">
+<div class="stat-icon amber">
+<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+</div>
+<div><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending Assessments</div></div>
+</div>
+<div class="stat-card">
+<div class="stat-icon emerald">
+<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+</div>
+<div><div class="stat-value" id="stat-reports">0</div><div class="stat-label">Reports Generated</div></div>
+</div>
+<div class="stat-card">
+<div class="stat-icon rose">
+<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+</div>
+<div><div class="stat-value" id="stat-alerts">0</div><div class="stat-label">Severity Alerts</div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<span class="card-title">Recent Clients</span>
+<button class="btn btn-outline btn-sm" onclick="navigateTo('intake')">+ New Client</button>
+</div>
+<div style="overflow-x:auto;">
+<table class="data-table" id="clients-table">
+<thead><tr><th>Client ID</th><th>Name</th><th>Age</th><th>Primary Concern</th><th>Status</th><th>Last Updated</th><th>Actions</th></tr></thead>
+<tbody id="clients-tbody"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- INTAKE -->
+<div id="view-intake" class="hidden">
+<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;">
+<div class="space-y-6">
+<div class="card">
+<div class="card-header">
+<span class="card-title">1. Demographics & Core Data</span>
+<span class="badge badge-pending">Required</span>
+</div>
+<div class="card-body">
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">First Name <span>*</span></label>
+<input type="text" class="form-input" id="in-firstname" placeholder="Enter first name">
+</div>
+<div class="form-group">
+<label class="form-label">Last Name <span>*</span></label>
+<input type="text" class="form-input" id="in-lastname" placeholder="Enter last name">
+</div>
+<div class="form-group">
+<label class="form-label">Date of Birth <span>*</span></label>
+<input type="date" class="form-input" id="in-dob" onchange="calculateAge()">
+</div>
+<div class="form-group">
+<label class="form-label">Age (Auto-calculated)</label>
+<input type="text" class="form-input" id="in-age" readonly placeholder="Select DOB" style="background:#f8fafc;">
+</div>
+<div class="form-group">
+<label class="form-label">Primary Language</label>
+<select class="form-select" id="in-lang1">
+<option>English</option><option>Spanish</option><option>Mandarin</option><option>Arabic</option><option>French</option><option>Hindi</option><option>Portuguese</option><option>Other</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label">Secondary Language</label>
+<select class="form-select" id="in-lang2">
+<option>None</option><option>English</option><option>Spanish</option><option>Mandarin</option><option>Arabic</option><option>French</option><option>Other</option>
+</select>
+</div>
+<div class="form-group full">
+<label class="form-label">Geographic / Cultural Context</label>
+<input type="text" class="form-input" id="in-culture" placeholder="e.g., Urban North America, Rural Southeast Asia">
+</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<span class="card-title">2. Referral & Diagnostic Context</span>
+</div>
+<div class="card-body">
+<div class="form-group full mb-4">
+<label class="form-label">Existing Diagnoses (Select all that apply)</label>
+<div class="checkbox-grid" id="in-diagnoses">
+<label class="checkbox-item"><input type="checkbox" value="ASD"> Autism Spectrum Disorder (ASD)</label>
+<label class="checkbox-item"><input type="checkbox" value="ADHD"> ADHD</label>
+<label class="checkbox-item"><input type="checkbox" value="GDD"> Global Developmental Delay</label>
+<label class="checkbox-item"><input type="checkbox" value="SLD"> Specific Language Disorder</label>
+<label class="checkbox-item"><input type="checkbox" value="DCD"> Dyspraxia / DCD</label>
+<label class="checkbox-item"><input type="checkbox" value="SPD"> Sensory Processing Disorder</label>
+<label class="checkbox-item"><input type="checkbox" value="CP"> Cerebral Palsy</label>
+<label class="checkbox-item"><input type="checkbox" value="DS"> Down Syndrome</label>
+<label class="checkbox-item"><input type="checkbox" value="Other"> Other / Undiagnosed</label>
+</div>
+</div>
+<div class="form-grid">
+<div class="form-group full">
+<label class="form-label">Primary Caregiver Concerns</label>
+<textarea class="form-textarea" id="in-concerns" rows="3" placeholder="Describe primary concerns in caregiver's own words..."></textarea>
+</div>
+<div class="form-group full">
+<label class="form-label">Medical History Summary</label>
+<textarea class="form-textarea" id="in-medical" rows="2" placeholder="Relevant medical history, medications, surgeries, allergies..."></textarea>
+</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<span class="card-title">3. ICF Environmental Context Mapping</span>
+</div>
+<div class="card-body">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+<div style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+<svg width="16" height="16" fill="none" stroke="var(--primary)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+Home
+</h4>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Supportive family</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Siblings present</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Sensory tools access</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Consistent routines</label>
+</div>
+</div>
+<div style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+<svg width="16" height="16" fill="none" stroke="#3b82f6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+School
+</h4>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> IEP/504 Plan</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> School therapy</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Inclusive classroom</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Behavior support plan</label>
+</div>
+</div>
+<div style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+<h4 style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+<svg width="16" height="16" fill="none" stroke="#f59e0b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+Community
+</h4>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Community therapy</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Recreational programs</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Peer social groups</label>
+<label class="checkbox-item" style="padding:8px;"><input type="checkbox"> Cultural/religious community</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<span class="card-title">4. Compliance & Privacy Gate</span>
+</div>
+<div class="card-body">
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Data Privacy Region</label>
+<select class="form-select" id="in-region">
+<option value="hipaa">USA - HIPAA</option>
+<option value="gdpr">EU - GDPR</option>
+<option value="uk">UK - NHS Data Protection</option>
+<option value="ca">Canada - PIPEDA</option>
+<option value="au">Australia - Privacy Act</option>
+<option value="other">Other / Local Law</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label">Consent Status</label>
+<select class="form-select" id="in-consent">
+<option>Written consent obtained</option>
+<option>Verbal consent (follow-up required)</option>
+<option>Guardian consent pending</option>
+</select>
+</div>
+<div class="form-group full">
+<label class="checkbox-item" style="border-color:var(--success);background:#f0fdf4;">
+<input type="checkbox" checked> I confirm this intake complies with selected regional privacy standards and informed consent protocols.
+</label>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;gap:12px;justify-content:flex-end;">
+<button class="btn btn-outline" onclick="navigateTo('dashboard')">Cancel</button>
+<button class="btn btn-primary" onclick="saveIntake()">Save & Continue to Assessment</button>
+</div>
+</div>
+
+<div class="space-y-6">
+<div class="progress-sidebar">
+<h3 style="font-weight:600;margin-bottom:20px;">Assessment Progress</h3>
+<div class="progress-item">
+<div class="progress-header"><span>Intake Complete</span><span id="prog-intake">0%</span></div>
+<div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-intake" style="width:0%"></div></div>
+</div>
+<div class="progress-item">
+<div class="progress-header"><span>OT Assessment</span><span id="prog-ot">0%</span></div>
+<div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-ot" style="width:0%"></div></div>
+</div>
+<div class="progress-item">
+<div class="progress-header"><span>ST Assessment</span><span id="prog-st">0%</span></div>
+<div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-st" style="width:0%"></div></div>
+</div>
+<div class="progress-item">
+<div class="progress-header"><span>Behavior Assessment</span><span id="prog-bt">0%</span></div>
+<div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-bt" style="width:0%"></div></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-body">
+<h4 style="font-weight:600;margin-bottom:12px;">Security Status</h4>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;">
+<span style="color:#166534;font-weight:500;">Data Encryption</span>
+<span class="badge badge-complete">AES-256</span>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#fffbeb;border-radius:6px;border:1px solid #fcd34d;">
+<span style="color:#92400e;font-weight:500;">Audit Logging</span>
+<span class="badge badge-pending">Active</span>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#eff6ff;border-radius:6px;border:1px solid #bfdbfe;">
+<span style="color:#1e40af;font-weight:500;">Backup</span>
+<span class="badge badge-gdpr">Daily</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ASSESSMENT -->
+<div id="view-assessment" class="hidden">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+<div>
+<h2 style="font-size:20px;font-weight:700;">Core Domain Assessment Matrix</h2>
+<p style="color:var(--text-muted);font-size:14px;">Module 2: Branching questionnaires across OT, ST, and Behavior Therapy</p>
+</div>
+<div class="tabs">
+<button class="tab active" onclick="switchAssessmentTab('ot')" id="tab-ot">Occupational Therapy</button>
+<button class="tab" onclick="switchAssessmentTab('st')" id="tab-st">Speech-Language</button>
+<button class="tab" onclick="switchAssessmentTab('bt')" id="tab-bt">Behavior Therapy</button>
+</div>
+</div>
+
+<!-- OT Domain -->
+<div id="assess-ot">
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#fff7ed;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="var(--accent-ot)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg>
+</div>
+<div>
+<span class="card-title">Sensory Processing</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to Sensory Profile 2 / SPM-2</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="ot-sensory-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#eff6ff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#3b82f6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+</div>
+<div>
+<span class="card-title">Motor Skills</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to PDMS-3 / Movement ABC-3</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="ot-motor-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#faf5ff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#9333ea" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+</div>
+<div>
+<span class="card-title">Visual-Motor Integration</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to Beery VMI-6</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="ot-visual-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#ecfdf5;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#059669" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+</div>
+<div>
+<span class="card-title">Activities of Daily Living (ADLs)</span>
+<p style="font-size:12px;color:var(--text-muted);">Self-care competencies and independence</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="ot-adl-container"></div>
+</div>
+</div>
+
+<!-- ST Domain -->
+<div id="assess-st" class="hidden">
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#eef2ff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="var(--accent-st)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+</div>
+<div>
+<span class="card-title">Receptive & Expressive Language</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to CELF-5 / PLS-5</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="st-language-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#fdf2f8;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#db2777" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+</div>
+<div>
+<span class="card-title">Articulation & Phonology</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to GFTA-3</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="st-articulation-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#ecfeff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#0891b2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+</div>
+<div>
+<span class="card-title">Pragmatic Communication</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to TOPL-2</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="st-pragmatic-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#fff1f2;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#e11d48" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+</div>
+<div>
+<span class="card-title">Oral-Motor & Feeding</span>
+<p style="font-size:12px;color:var(--text-muted);">Structural integrity and swallowing</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="st-oral-container"></div>
+</div>
+</div>
+
+<!-- BT Domain -->
+<div id="assess-bt" class="hidden">
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#fef2f2;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="var(--accent-bt)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+</div>
+<div>
+<span class="card-title">Functional Behavior Analysis (ABC)</span>
+<p style="font-size:12px;color:var(--text-muted);">Antecedent, Behavior, Consequence logging</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="bt-abc-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#fffbeb;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#d97706" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+</div>
+<div>
+<span class="card-title">Adaptive Behavior</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to Vineland-3</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="bt-adaptive-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#fdf2f8;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#be185d" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+</div>
+<div>
+<span class="card-title">Behavioral Challenges</span>
+<p style="font-size:12px;color:var(--text-muted);">Frequency, duration, and intensity tracking</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="bt-challenge-container"></div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:40px;height:40px;background:#f5f3ff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+<svg width="20" height="20" fill="none" stroke="#7c3aed" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+</div>
+<div>
+<span class="card-title">Autism Symptom Severity</span>
+<p style="font-size:12px;color:var(--text-muted);">Mapped to CARS-2</p>
+</div>
+</div>
+</div>
+<div class="card-body" id="bt-autism-container"></div>
+</div>
+</div>
+
+<div style="display:flex;justify-content:flex-end;gap:12px;" class="no-print">
+<button class="btn btn-outline" onclick="saveAssessmentProgress()">Save Progress</button>
+<button class="btn btn-primary" onclick="calculateScores()">Calculate Scores & Analyze</button>
+</div>
+</div>
+
+<!-- ANALYSIS -->
+<div id="view-analysis" class="hidden">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+<div>
+<h2 style="font-size:20px;font-weight:700;">Cross-Disciplinary Intersection Engine</h2>
+<p style="color:var(--text-muted);font-size:14px;">Module 3: Clinical overlap analysis and correlation flagging</p>
+</div>
+<button class="btn btn-primary" onclick="runIntersectionAnalysis()">Run Analysis</button>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px;">
+<div class="severity-card">
+<div class="severity-header">
+<div>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">OT Severity Index</p>
+<div class="severity-value" id="severity-ot">--</div>
+</div>
+<span class="badge" id="severity-ot-badge">Pending</span>
+</div>
+<div class="severity-bar-bg"><div class="severity-bar-fill" id="severity-ot-bar" style="width:0%;background:var(--accent-ot);"></div></div>
+</div>
+<div class="severity-card">
+<div class="severity-header">
+<div>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">ST Severity Index</p>
+<div class="severity-value" id="severity-st">--</div>
+</div>
+<span class="badge" id="severity-st-badge">Pending</span>
+</div>
+<div class="severity-bar-bg"><div class="severity-bar-fill" id="severity-st-bar" style="width:0%;background:var(--accent-st);"></div></div>
+</div>
+<div class="severity-card">
+<div class="severity-header">
+<div>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">Behavior Severity Index</p>
+<div class="severity-value" id="severity-bt">--</div>
+</div>
+<span class="badge" id="severity-bt-badge">Pending</span>
+</div>
+<div class="severity-bar-bg"><div class="severity-bar-fill" id="severity-bt-bar" style="width:0%;background:var(--accent-bt);"></div></div>
+</div>
+</div>
+
+<div class="card mb-6">
+<div class="card-header">
+<span class="card-title">Clinical Presentation Intersection Matrix</span>
+</div>
+<div style="overflow-x:auto;">
+<div class="intersection-row header">
+<div>Clinical Presentation</div>
+<div style="color:var(--accent-ot);">OT Driver</div>
+<div style="color:var(--accent-st);">ST Driver</div>
+<div style="color:var(--accent-bt);">Behavior Driver</div>
+<div>Flag</div>
+</div>
+<div id="intersection-matrix"></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<span class="card-title">Algorithmic Correlation Alerts</span>
+</div>
+<div class="card-body" id="correlation-alerts">
+<div class="alert alert-info">
+<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+Run the intersection analysis after completing assessments to generate cross-domain correlation alerts.
+</div>
+</div>
+</div>
+</div>
+
+<!-- REPORTS -->
+<div id="view-reports" class="hidden">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;" class="no-print">
+<div>
+<h2 style="font-size:20px;font-weight:700;">Automated Reporting & Goal Generation</h2>
+<p style="color:var(--text-muted);font-size:14px;">Module 5: Multidisciplinary summaries, SMART goals, and intervention guidelines</p>
+</div>
+<div style="display:flex;gap:12px;">
+<button class="btn btn-primary" onclick="generateReport()">Generate Full Report</button>
+<button class="btn btn-secondary" onclick="exportPDF()">Export PDF</button>
+</div>
+</div>
+
+<div id="report-preview" style="background:white;border-radius:12px;border:1px solid var(--border);overflow:hidden;">
+<div class="report-header">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;">
+<div>
+<h1 style="font-size:28px;font-weight:800;margin-bottom:4px;">Multidisciplinary Assessment Report</h1>
+<p style="color:rgba(255,255,255,0.6);font-size:14px;">GMAF-OSB Standardized Evaluation</p>
+</div>
+<div style="text-align:right;">
+<p style="font-size:12px;color:rgba(255,255,255,0.5);">Report ID</p>
+<p class="font-mono" style="font-size:18px;font-weight:600;" id="report-id">GMAF-2026-0001</p>
+</div>
+</div>
+<div class="report-header-grid">
+<div>
+<p style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;">Client</p>
+<p style="font-weight:600;font-size:16px;" id="report-name">--</p>
+</div>
+<div>
+<p style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;">Age</p>
+<p style="font-weight:600;font-size:16px;" id="report-age">--</p>
+</div>
+<div>
+<p style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;">Assessment Date</p>
+<p style="font-weight:600;font-size:16px;" id="report-date">--</p>
+</div>
+<div>
+<p style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;">Clinician</p>
+<p style="font-weight:600;font-size:16px;">Dr. [Clinician Name]</p>
+</div>
+</div>
+</div>
+
+<div class="report-section">
+<h3 class="report-section-title">Executive Summary</h3>
+<div id="report-executive" style="color:var(--text-muted);line-height:1.7;">
+<p style="font-style:italic;">Generate the report to see the executive summary based on assessment data.</p>
+</div>
+</div>
+
+<div class="report-section">
+<h3 class="report-section-title">Domain Summaries</h3>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+<div style="border:1px solid var(--border);border-radius:8px;padding:20px;">
+<h4 style="font-weight:600;color:var(--accent-ot);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+<span style="width:8px;height:8px;background:var(--accent-ot);border-radius:50%;display:inline-block;"></span>
+Occupational Therapy
+</h4>
+<div id="report-ot-summary" style="font-size:14px;color:var(--text-muted);line-height:1.6;">
+<p style="font-style:italic;">No OT assessment data available.</p>
+</div>
+</div>
+<div style="border:1px solid var(--border);border-radius:8px;padding:20px;">
+<h4 style="font-weight:600;color:var(--accent-st);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+<span style="width:8px;height:8px;background:var(--accent-st);border-radius:50%;display:inline-block;"></span>
+Speech-Language Therapy
+</h4>
+<div id="report-st-summary" style="font-size:14px;color:var(--text-muted);line-height:1.6;">
+<p style="font-style:italic;">No ST assessment data available.</p>
+</div>
+</div>
+<div style="border:1px solid var(--border);border-radius:8px;padding:20px;">
+<h4 style="font-weight:600;color:var(--accent-bt);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+<span style="width:8px;height:8px;background:var(--accent-bt);border-radius:50%;display:inline-block;"></span>
+Behavior Therapy
+</h4>
+<div id="report-bt-summary" style="font-size:14px;color:var(--text-muted);line-height:1.6;">
+<p style="font-style:italic;">No Behavior assessment data available.</p>
+</div>
+</div>
+</div>
+</div>
+
+<div class="report-section">
+<h3 class="report-section-title">Standardized Scores & Normative Mapping</h3>
+<div style="overflow-x:auto;">
+<table class="data-table" id="report-scores-table">
+<thead>
+<tr>
+<th>Domain</th><th>Subdomain</th><th style="text-align:center;">Raw Score</th>
+<th style="text-align:center;">Scaled Score</th><th style="text-align:center;">Standard Score</th>
+<th style="text-align:center;">Percentile</th><th style="text-align:center;">Age Equivalent</th><th style="text-align:center;">Severity</th>
+</tr>
+</thead>
+<tbody id="report-scores-body">
+<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);font-style:italic;">No scores calculated yet. Complete assessments and run analysis.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="report-section">
+<h3 class="report-section-title">SMART Goal Bank (Auto-Generated)</h3>
+<div id="report-goals">
+<p style="color:var(--text-muted);font-style:italic;">Generate report to see auto-generated SMART goals...</p>
+</div>
+</div>
+
+<div class="report-section">
+<h3 class="report-section-title">Recommended Intervention Guidelines</h3>
+<div id="report-intervention" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+<p style="color:var(--text-muted);font-style:italic;grid-column:1/-1;">Generate report to see intervention recommendations...</p>
+</div>
+</div>
+
+<div class="report-section">
+<h3 class="report-section-title">Cross-Disciplinary Integration Recommendations</h3>
+<div id="report-cross" style="color:var(--text-muted);line-height:1.7;">
+<p style="font-style:italic;">Generate report to see cross-disciplinary recommendations...</p>
+</div>
+</div>
+
+<div class="report-section" style="display:grid;grid-template-columns:repeat(3,1fr);gap:40px;">
+<div>
+<div style="height:60px;border-bottom:1px solid var(--border);margin-bottom:8px;"></div>
+<p style="font-weight:600;font-size:14px;">Occupational Therapist</p>
+<p style="font-size:12px;color:var(--text-muted);">License #________________</p>
+</div>
+<div>
+<div style="height:60px;border-bottom:1px solid var(--border);margin-bottom:8px;"></div>
+<p style="font-weight:600;font-size:14px;">Speech-Language Pathologist</p>
+<p style="font-size:12px;color:var(--text-muted);">License #________________</p>
+</div>
+<div>
+<div style="height:60px;border-bottom:1px solid var(--border);margin-bottom:8px;"></div>
+<p style="font-weight:600;font-size:14px;">Behavior Analyst / Therapist</p>
+<p style="font-size:12px;color:var(--text-muted);">License #________________</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SETTINGS -->
+<div id="view-settings" class="hidden">
+<div class="card">
+<div class="card-header">
+<span class="card-title">System Settings</span>
+</div>
+<div class="card-body">
+<div style="max-width:600px;">
+<div class="form-group full mb-4">
+<label class="form-label">Clinic / Organization Name</label>
+<input type="text" class="form-input" value="Your Therapy Center" id="setting-org">
+</div>
+<div class="form-group full mb-4">
+<label class="form-label">Default Privacy Region</label>
+<select class="form-select" id="setting-region">
+<option>USA - HIPAA</option>
+<option>EU - GDPR</option>
+<option>UK - NHS</option>
+<option>Canada - PIPEDA</option>
+</select>
+</div>
+<div class="form-group full mb-4">
+<label class="form-label">Report Template Style</label>
+<select class="form-select">
+<option>Standard Multidisciplinary</option>
+<option>School-Focused</option>
+<option>Medical / Physician</option>
+<option>Funding Body / Insurance</option>
+</select>
+</div>
+<div class="form-group full mb-4">
+<label class="form-label">Auto-Save Interval (minutes)</label>
+<input type="number" class="form-input" value="5" min="1" max="60">
+</div>
+<div style="display:flex;gap:12px;">
+<button class="btn btn-primary" onclick="showToast('Settings saved successfully')">Save Settings</button>
+<button class="btn btn-outline">Reset to Defaults</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+<div class="modal">
+<div class="modal-header">
+<h3 style="font-weight:700;" id="modal-title">New Client</h3>
+<button class="btn btn-outline btn-sm" onclick="closeModal()">Close</button>
+</div>
+<div class="modal-body" id="modal-body"></div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+<button class="btn btn-primary" onclick="closeModal()">Confirm</button>
+</div>
+</div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+
+// ===================== GMAF-OSB APPLICATION CORE =====================
+
+let currentClient = null;
+let clients = [];
+let assessmentData = { ot: {}, st: {}, bt: {} };
+let scores = { ot: {}, st: {}, bt: {} };
+let currentView = 'dashboard';
+
+// Demo data
+const demoClients = [
+    { id: 'GMAF-2026-0101', firstName: 'Ethan', lastName: 'Martinez', dob: '2019-03-15', age: '7y 5m', concern: 'Sensory dysregulation, delayed speech', status: 'In Progress', updated: '2026-09-01', diagnoses: ['ASD', 'SPD'] },
+    { id: 'GMAF-2026-0102', firstName: 'Sophia', lastName: 'Chen', dob: '2020-11-22', age: '5y 9m', concern: 'Autism evaluation, motor planning', status: 'Report Ready', updated: '2026-08-28', diagnoses: ['ASD'] },
+    { id: 'GMAF-2026-0103', firstName: 'Aiden', lastName: 'Johnson', dob: '2018-07-08', age: '8y 1m', concern: 'Behavioral outbursts, feeding aversion', status: 'Assessment Phase', updated: '2026-09-02', diagnoses: ['ADHD', 'SPD'] }
+];
+
+// Assessment Question Banks
+const questionBanks = {
+    ot: {
+        sensory: [
+            { id: 'ot_s1', text: 'Tactile defensiveness (avoids textures, fabrics, or messy play)', instrument: 'Sensory Profile 2' },
+            { id: 'ot_s2', text: 'Vestibular seeking (excessive spinning, rocking, movement craving)', instrument: 'SPM-2' },
+            { id: 'ot_s3', text: 'Proprioceptive dysfunction (clumsy, bumps into objects, poor body awareness)', instrument: 'SPM-2' },
+            { id: 'ot_s4', text: 'Auditory sensitivity (covers ears, distressed by everyday sounds)', instrument: 'Sensory Profile 2' },
+            { id: 'ot_s5', text: 'Visual sensitivity (avoids bright lights, stares at patterns)', instrument: 'Sensory Profile 2' },
+            { id: 'ot_s6', text: 'Oral sensory seeking (mouths objects, chews non-food items)', instrument: 'SPM-2' }
+        ],
+        motor: [
+            { id: 'ot_m1', text: 'Fine motor coordination (pencil grasp, buttoning, small objects)', instrument: 'PDMS-3' },
+            { id: 'ot_m2', text: 'Gross motor coordination (running, jumping, ball skills)', instrument: 'Movement ABC-3' },
+            { id: 'ot_m3', text: 'Balance and postural control (single leg stance, sitting stability)', instrument: 'Movement ABC-3' },
+            { id: 'ot_m4', text: 'Motor planning / praxis (sequences novel movements, imitates actions)', instrument: 'PDMS-3' },
+            { id: 'ot_m5', text: 'Bilateral coordination (uses both hands together, crosses midline)', instrument: 'PDMS-3' },
+            { id: 'ot_m6', text: 'Core strength and endurance (sustains sitting, upright posture)', instrument: 'Movement ABC-3' }
+        ],
+        visual: [
+            { id: 'ot_v1', text: 'Hand-eye coordination (catching, throwing, tracing)', instrument: 'Beery VMI-6' },
+            { id: 'ot_v2', text: 'Visual perception (form constancy, spatial relations, figure-ground)', instrument: 'Beery VMI-6' },
+            { id: 'ot_v3', text: 'Visual-motor integration (copying shapes, writing letters)', instrument: 'Beery VMI-6' },
+            { id: 'ot_v4', text: 'Visual tracking (follows moving objects, reading left-to-right)', instrument: 'Beery VMI-6' },
+            { id: 'ot_v5', text: 'Eye-hand coordination for tool use (scissors, utensils, construction toys)', instrument: 'Beery VMI-6' }
+        ],
+        adl: [
+            { id: 'ot_a1', text: 'Feeding independence (uses utensils, opens containers, self-feeds)', instrument: 'SFA' },
+            { id: 'ot_a2', text: 'Dressing skills (buttons, zippers, shoes, seasonal clothing)', instrument: 'SFA' },
+            { id: 'ot_a3', text: 'Toileting and hygiene (washing hands, brushing teeth, toilet routines)', instrument: 'SFA' },
+            { id: 'ot_a4', text: 'Sleep routines (transitions to bed, stays asleep, sensory needs at night)', instrument: 'Caregiver Report' },
+            { id: 'ot_a5', text: 'Community mobility (navigates spaces, road safety, transportation)', instrument: 'SFA' }
+        ]
+    },
+    st: {
+        language: [
+            { id: 'st_l1', text: 'Receptive vocabulary (follows commands, identifies objects/pictures)', instrument: 'CELF-5' },
+            { id: 'st_l2', text: 'Expressive vocabulary (names objects, describes events, word retrieval)', instrument: 'PLS-5' },
+            { id: 'st_l3', text: 'Syntactic comprehension (understands complex sentences, grammar)', instrument: 'CELF-5' },
+            { id: 'st_l4', text: 'Syntactic expression (combines words, uses correct word order, tenses)', instrument: 'PLS-5' },
+            { id: 'st_l5', text: 'Narrative skills (tells stories, sequences events, provides context)', instrument: 'CELF-5' },
+            { id: 'st_l6', text: 'Conceptual understanding (spatial, temporal, quantitative concepts)', instrument: 'PLS-5' }
+        ],
+        articulation: [
+            { id: 'st_ar1', text: 'Speech sound accuracy (produces age-appropriate phonemes)', instrument: 'GFTA-3' },
+            { id: 'st_ar2', text: 'Phonological processes (cluster reduction, final consonant deletion, etc.)', instrument: 'GFTA-3' },
+            { id: 'st_ar3', text: 'Speech intelligibility (strangers understand speech without context)', instrument: 'GFTA-3' },
+            { id: 'st_ar4', text: 'Voice quality (pitch, volume, resonance appropriate for age/sex)', instrument: 'Clinical Observation' },
+            { id: 'st_ar5', text: 'Fluency (smooth speech without excessive repetitions or blocks)', instrument: 'Clinical Observation' }
+        ],
+        pragmatic: [
+            { id: 'st_p1', text: 'Eye contact and joint attention (shares focus, references others)', instrument: 'TOPL-2' },
+            { id: 'st_p2', text: 'Topic maintenance (stays on topic, introduces relevant shifts)', instrument: 'TOPL-2' },
+            { id: 'st_p3', text: 'Turn-taking in conversation (waits, initiates, repairs breakdowns)', instrument: 'TOPL-2' },
+            { id: 'st_p4', text: 'Nonverbal communication (gestures, facial expressions, body language)', instrument: 'TOPL-2' },
+            { id: 'st_p5', text: 'Social inference and perspective-taking (understands others' feelings/intentions)', instrument: 'TOPL-2' }
+        ],
+        oral: [
+            { id: 'st_o1', text: 'Oral structure integrity (tone, symmetry, range of motion)', instrument: 'Clinical Exam' },
+            { id: 'st_o2', text: 'Swallowing safety (no coughing/choking, efficient bolus management)', instrument: 'Clinical Exam' },
+            { id: 'st_o3', text: 'Oral-motor coordination (lip closure, tongue lateralization, chewing)', instrument: 'Clinical Exam' },
+            { id: 'st_o4', text: 'Drooling management (age-appropriate saliva control)', instrument: 'Caregiver Report' },
+            { id: 'st_o5', text: 'Food texture tolerance (accepts varied consistencies without gagging)', instrument: 'Clinical Exam' }
+        ]
+    },
+    bt: {
+        abc: [
+            { id: 'bt_abc1', text: 'Frequency of target behaviors (how often behaviors occur per day)', instrument: 'ABC Data' },
+            { id: 'bt_abc2', text: 'Antecedent patterns (common triggers: demands, transitions, sensory overload)', instrument: 'ABC Data' },
+            { id: 'bt_abc3', text: 'Consequence analysis (what maintains the behavior: escape, attention, tangible, sensory)', instrument: 'ABC Data' },
+            { id: 'bt_abc4', text: 'Setting events (hunger, fatigue, illness, environmental changes)', instrument: 'ABC Data' },
+            { id: 'bt_abc5', text: 'Behavior topography (clear description of what the behavior looks like)', instrument: 'ABC Data' }
+        ],
+        adaptive: [
+            { id: 'bt_ad1', text: 'Communication independence (expresses needs without prompting, uses AAC if applicable)', instrument: 'Vineland-3' },
+            { id: 'bt_ad2', text: 'Daily living skills (follows routines, completes tasks with minimal support)', instrument: 'Vineland-3' },
+            { id: 'bt_ad3', text: 'Socialization skills (plays with peers, shows affection, understands social rules)', instrument: 'Vineland-3' },
+            { id: 'bt_ad4', text: 'Motor skills independence (dresses, feeds, toiletes independently)', instrument: 'Vineland-3' },
+            { id: 'bt_ad5', text: 'Community participation (shops, uses public facilities, follows safety rules)', instrument: 'Vineland-3' }
+        ],
+        challenges: [
+            { id: 'bt_ch1', text: 'Aggression frequency and intensity (hitting, kicking, biting, property destruction)', instrument: 'Behavior Tracking' },
+            { id: 'bt_ch2', text: 'Self-injurious behavior (head-banging, scratching, hand-biting)', instrument: 'Behavior Tracking' },
+            { id: 'bt_ch3', text: 'Elopement / wandering (leaves designated areas without permission)', instrument: 'Behavior Tracking' },
+            { id: 'bt_ch4', text: 'Stereotypy / repetitive behavior (hand-flapping, rocking, scripting)', instrument: 'Behavior Tracking' },
+            { id: 'bt_ch5', text: 'Emotional dysregulation (meltdowns, crying, shutdowns duration and recovery)', instrument: 'Behavior Tracking' }
+        ],
+        autism: [
+            { id: 'bt_au1', text: 'Relating to people (eye contact, social responsiveness, attachment)', instrument: 'CARS-2' },
+            { id: 'bt_au2', text: 'Imitation (copies actions, sounds, play behaviors)', instrument: 'CARS-2' },
+            { id: 'bt_au3', text: 'Emotional response (appropriate affect, range of emotions)', instrument: 'CARS-2' },
+            { id: 'bt_au4', text: 'Body use (posture, gestures, peculiar movements)', instrument: 'CARS-2' },
+            { id: 'bt_au5', text: 'Object use (functional play, interest in toys, unusual object attachment)', instrument: 'CARS-2' },
+            { id: 'bt_au6', text: 'Adaptation to change (transitions, new environments, routine disruptions)', instrument: 'CARS-2' }
+        ]
+    }
+};
+
+// Intersection Matrix Data
+const intersectionData = [
+    { presentation: 'Meltdown during transitions', ot: 'Vestibular/Proprioceptive dysregulation', st: 'Receptive language breakdown (missed cues)', bt: 'Escape/Avoidance reinforcement history', flag: 'High' },
+    { presentation: 'Aggression or biting during play', ot: 'Oral seeking or tactile defensiveness', st: 'Inability to verbally express boundaries', bt: 'Function: Gaining tangible or escaping demand', flag: 'High' },
+    { presentation: 'Food selectivity / Refusal', ot: 'Oral-motor hypersensitivity or aversion', st: 'Swallowing safety or motor coordination deficits', bt: 'Behavioral rigidity or routine fixation', flag: 'Moderate' },
+    { presentation: 'Avoidance of group activities', ot: 'Auditory/visual sensory overload', st: 'Pragmatic language deficits (cannot join)', bt: 'Social anxiety / negative reinforcement', flag: 'Moderate' },
+    { presentation: 'Difficulty with handwriting', ot: 'Fine motor / proprioceptive deficits', st: 'Phonological awareness impacting spelling', bt: 'Task avoidance due to failure history', flag: 'Moderate' },
+    { presentation: 'Sleep disturbances', ot: 'Sensory dysregulation at bedtime', st: 'Reduced receptive language for bedtime routines', bt: 'Anxiety / separation-related behaviors', flag: 'Low' }
+];
+
+// ===================== NAVIGATION =====================
+function navigateTo(view) {
+    currentView = view;
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    document.getElementById('view-dashboard').classList.add('hidden');
+    document.getElementById('view-intake').classList.add('hidden');
+    document.getElementById('view-assessment').classList.add('hidden');
+    document.getElementById('view-analysis').classList.add('hidden');
+    document.getElementById('view-reports').classList.add('hidden');
+    document.getElementById('view-settings').classList.add('hidden');
+    document.getElementById('view-' + view).classList.remove('hidden');
+
+    const titles = {
+        dashboard: ['Dashboard', 'Overview of all clinical activities'],
+        intake: ['Universal Intake', 'Module 1: Foundational data capture with ICF mapping'],
+        assessment: ['Core Domain Assessment', 'Module 2: Branching questionnaires across disciplines'],
+        analysis: ['Cross-Disciplinary Analysis', 'Module 3: Clinical overlap and correlation engine'],
+        reports: ['Reports & Goals', 'Module 5: Automated reporting and SMART goal generation'],
+        settings: ['System Settings', 'Configure portal preferences and compliance']
+    };
+    document.getElementById('page-title').textContent = titles[view][0];
+    document.getElementById('page-subtitle').textContent = titles[view][1];
+
+    if (view === 'dashboard') updateStats();
+    if (view === 'assessment') renderAllQuestions();
+    if (view === 'analysis') renderIntersectionMatrix();
+}
+
+// ===================== DASHBOARD =====================
+function init() {
+    clients = [...demoClients];
+    renderClients();
+    updateStats();
+    renderAllQuestions();
+    renderIntersectionMatrix();
+}
+
+function updateStats() {
+    document.getElementById('stat-total').textContent = clients.length;
+    document.getElementById('stat-pending').textContent = clients.filter(c => c.status !== 'Report Ready').length;
+    document.getElementById('stat-reports').textContent = clients.filter(c => c.status === 'Report Ready').length;
+    document.getElementById('stat-alerts').textContent = Math.floor(Math.random() * 4);
+}
+
+function renderClients() {
+    const tbody = document.getElementById('clients-tbody');
+    tbody.innerHTML = clients.map(c => {
+        const statusClass = c.status === 'Report Ready' ? 'badge-complete' : c.status === 'In Progress' ? 'badge badge-gdpr' : 'badge badge-pending';
+        return `<tr>
+            <td class="font-mono text-xs text-muted">${c.id}</td>
+            <td style="font-weight:600;">${c.firstName} ${c.lastName}</td>
+            <td>${c.age}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.concern}</td>
+            <td><span class="badge ${statusClass}">${c.status}</span></td>
+            <td style="color:var(--text-muted);font-size:12px;">${c.updated}</td>
+            <td><button class="btn btn-outline btn-sm" onclick="loadClient('${c.id}')">View</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function loadClient(id) {
+    currentClient = clients.find(c => c.id === id);
+    showToast(`Loaded client: ${currentClient.firstName} ${currentClient.lastName}`);
+    navigateTo('assessment');
+    document.querySelector('[onclick="navigateTo('assessment')"]').click();
+}
+
+// ===================== INTAKE =====================
+function calculateAge() {
+    const dob = document.getElementById('in-dob').value;
+    if (!dob) return;
+    const birth = new Date(dob);
+    const now = new Date();
+    let years = now.getFullYear() - birth.getFullYear();
+    let months = now.getMonth() - birth.getMonth();
+    if (months < 0) { years--; months += 12; }
+    document.getElementById('in-age').value = `${years}y ${months}m`;
+}
+
+function saveIntake() {
+    const firstName = document.getElementById('in-firstname').value;
+    const lastName = document.getElementById('in-lastname').value;
+    if (!firstName || !lastName) {
+        showToast('Please enter first and last name', 'error');
+        return;
+    }
+
+    const diagnoses = Array.from(document.querySelectorAll('#in-diagnoses input:checked')).map(cb => cb.value);
+    const client = {
+        id: 'GMAF-2026-' + String(clients.length + 101).padStart(4, '0'),
+        firstName, lastName,
+        dob: document.getElementById('in-dob').value,
+        age: document.getElementById('in-age').value || 'Unknown',
+        concern: document.getElementById('in-concerns').value.substring(0, 50) + '...' || 'General developmental concerns',
+        status: 'Intake Complete',
+        updated: new Date().toISOString().split('T')[0],
+        diagnoses,
+        region: document.getElementById('in-region').value,
+        lang1: document.getElementById('in-lang1').value,
+        lang2: document.getElementById('in-lang2').value,
+        culture: document.getElementById('in-culture').value,
+        medical: document.getElementById('in-medical').value,
+        consent: document.getElementById('in-consent').value
+    };
+
+    clients.unshift(client);
+    currentClient = client;
+    showToast('Intake saved successfully!');
+    document.getElementById('bar-intake').style.width = '100%';
+    document.getElementById('prog-intake').textContent = '100%';
+    renderClients();
+    updateStats();
+
+    setTimeout(() => {
+        document.querySelector('[onclick="navigateTo('assessment')"]').click();
+    }, 800);
+}
+
+// ===================== ASSESSMENT RENDERING =====================
+function renderAllQuestions() {
+    renderDomainQuestions('ot', 'sensory', 'ot-sensory-container');
+    renderDomainQuestions('ot', 'motor', 'ot-motor-container');
+    renderDomainQuestions('ot', 'visual', 'ot-visual-container');
+    renderDomainQuestions('ot', 'adl', 'ot-adl-container');
+
+    renderDomainQuestions('st', 'language', 'st-language-container');
+    renderDomainQuestions('st', 'articulation', 'st-articulation-container');
+    renderDomainQuestions('st', 'pragmatic', 'st-pragmatic-container');
+    renderDomainQuestions('st', 'oral', 'st-oral-container');
+
+    renderDomainQuestions('bt', 'abc', 'bt-abc-container');
+    renderDomainQuestions('bt', 'adaptive', 'bt-adaptive-container');
+    renderDomainQuestions('bt', 'challenges', 'bt-challenge-container');
+    renderDomainQuestions('bt', 'autism', 'bt-autism-container');
+}
+
+function renderDomainQuestions(domain, subdomain, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const questions = questionBanks[domain][subdomain];
+
+    container.innerHTML = questions.map((q, i) => {
+        const val = assessmentData[domain][q.id] || '';
+        return `
+        <div class="question-block">
+            <div class="question-text">
+                <span class="question-number">${i + 1}</span>
+                <div>
+                    <div>${q.text}</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Instrument: ${q.instrument}</div>
+                </div>
+            </div>
+            <div class="rating-scale" id="scale-${q.id}">
+                <div class="rating-option mild ${val === '0' ? 'selected' : ''}" onclick="selectRating('${domain}', '${q.id}', '0', this)">Typical (0)</div>
+                <div class="rating-option ${val === '1' ? 'selected' : ''}" onclick="selectRating('${domain}', '${q.id}', '1', this)">Mild Concern (1)</div>
+                <div class="rating-option moderate ${val === '2' ? 'selected' : ''}" onclick="selectRating('${domain}', '${q.id}', '2', this)">Moderate (2)</div>
+                <div class="rating-option severe ${val === '3' ? 'selected' : ''}" onclick="selectRating('${domain}', '${q.id}', '3', this)">Severe (3)</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function selectRating(domain, qid, value, el) {
+    assessmentData[domain][qid] = value;
+    const scale = el.parentElement;
+    scale.querySelectorAll('.rating-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    updateProgressBars();
+}
+
+function updateProgressBars() {
+    const domains = ['ot', 'st', 'bt'];
+    const totals = { ot: 22, st: 21, bt: 21 };
+
+    domains.forEach(d => {
+        const answered = Object.keys(assessmentData[d]).length;
+        const pct = Math.round((answered / totals[d]) * 100);
+        document.getElementById('bar-' + d).style.width = pct + '%';
+        document.getElementById('prog-' + d).textContent = pct + '%';
+    });
+}
+
+function switchAssessmentTab(tab) {
+    ['ot', 'st', 'bt'].forEach(t => {
+        document.getElementById('assess-' + t).classList.add('hidden');
+        document.getElementById('tab-' + t).classList.remove('active');
+    });
+    document.getElementById('assess-' + tab).classList.remove('hidden');
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function saveAssessmentProgress() {
+    showToast('Assessment progress saved to local storage');
+}
+
+// ===================== SCORING & ANALYSIS =====================
+function calculateScores() {
+    if (!currentClient) {
+        showToast('Please complete intake first', 'error');
+        return;
+    }
+
+    // Calculate domain scores
+    const domains = ['ot', 'st', 'bt'];
+    domains.forEach(d => {
+        const values = Object.values(assessmentData[d]).map(v => parseInt(v) || 0);
+        const sum = values.reduce((a, b) => a + b, 0);
+        const max = Object.keys(questionBanks[d]).reduce((acc, key) => acc + questionBanks[d][key].length, 0) * 3;
+        const pct = max > 0 ? (sum / max) * 100 : 0;
+
+        scores[d] = {
+            raw: sum,
+            max: max,
+            percentage: pct,
+            scaled: Math.round(10 + (pct / 100) * 10), // 10-20 scale
+            standard: Math.round(100 - (pct / 100) * 30), // 70-100 scale (inverted - lower is better)
+            percentile: Math.round(100 - pct),
+            severity: pct > 60 ? 'Severe' : pct > 30 ? 'Moderate' : 'Low'
+        };
+    });
+
+    showToast('Scores calculated! Navigate to Analysis to see results.');
+    setTimeout(() => {
+        document.querySelector('[onclick="navigateTo('analysis')"]').click();
+        displaySeverityCards();
+    }, 500);
+}
+
+function displaySeverityCards() {
+    const sevMap = { 'Severe': 'badge-severe', 'Moderate': 'badge-moderate', 'Low': 'badge-low' };
+    const colors = { 'Severe': 'var(--danger)', 'Moderate': 'var(--warning)', 'Low': 'var(--success)' };
+
+    ['ot', 'st', 'bt'].forEach(d => {
+        const s = scores[d];
+        if (!s.severity) return;
+        document.getElementById('severity-' + d).textContent = s.percentage.toFixed(1) + '%';
+        document.getElementById('severity-' + d + '-badge').textContent = s.severity;
+        document.getElementById('severity-' + d + '-badge').className = 'badge ' + sevMap[s.severity];
+        document.getElementById('severity-' + d + '-bar').style.width = s.percentage + '%';
+        document.getElementById('severity-' + d + '-bar').style.background = colors[s.severity];
+    });
+}
+
+function renderIntersectionMatrix() {
+    const container = document.getElementById('intersection-matrix');
+    if (!container) return;
+    container.innerHTML = intersectionData.map(row => `
+        <div class="intersection-row">
+            <div style="font-weight:500;">${row.presentation}</div>
+            <div class="driver-ot">${row.ot}</div>
+            <div class="driver-st">${row.st}</div>
+            <div class="driver-bt">${row.bt}</div>
+            <div><span class="badge ${row.flag === 'High' ? 'badge-severe' : row.flag === 'Moderate' ? 'badge-moderate' : 'badge-low'}">${row.flag}</span></div>
+        </div>
+    `).join('');
+}
+
+function runIntersectionAnalysis() {
+    if (!scores.ot || !scores.ot.severity) {
+        showToast('Please calculate scores first', 'error');
+        return;
+    }
+
+    const alerts = [];
+
+    // Generate correlation alerts based on scores
+    if (scores.ot.percentage > 50 && scores.st.percentage > 50) {
+        alerts.push({
+            type: 'danger',
+            text: 'HIGH CORRELATION: Significant sensory processing deficits co-occur with language delays. Consider integrated sensory-language interventions.'
+        });
+    }
+    if (scores.bt.percentage > 50 && scores.st.percentage > 40) {
+        alerts.push({
+            type: 'danger',
+            text: 'HIGH CORRELATION: Behavioral challenges strongly associated with communication breakdowns. Prioritize functional communication training.'
+        });
+    }
+    if (scores.ot.percentage > 40 && scores.bt.percentage > 40) {
+        alerts.push({
+            type: 'warning',
+            text: 'MODERATE CORRELATION: Sensory dysregulation may be driving behavioral outbursts. Recommend sensory diet prior to behavior intervention.'
+        });
+    }
+    if (scores.ot.percentage < 30 && scores.st.percentage < 30 && scores.bt.percentage > 50) {
+        alerts.push({
+            type: 'info',
+            text: 'ISOLATED BEHAVIOR PROFILE: Behavioral concerns present without significant sensory or language drivers. Pure ABA approach may be most effective.'
+        });
+    }
+    if (scores.ot.percentage > 60) {
+        alerts.push({
+            type: 'warning',
+            text: 'SEVERE OT PROFILE: High sensory dysregulation index. Recommend intensive OT (3x/week) with sensory integration protocol.'
+        });
+    }
+    if (scores.st.percentage > 60) {
+        alerts.push({
+            type: 'warning',
+            text: 'SEVERE ST PROFILE: Significant communication deficits. Recommend intensive ST (3-4x/week) with AAC evaluation if indicated.'
+        });
+    }
+
+    if (alerts.length === 0) {
+        alerts.push({ type: 'success', text: 'No significant cross-domain correlations detected. Discipline-specific interventions recommended.' });
+    }
+
+    const container = document.getElementById('correlation-alerts');
+    container.innerHTML = alerts.map(a => `
+        <div class="alert alert-${a.type}">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>${a.text}</div>
+        </div>
+    `).join('');
+
+    showToast('Intersection analysis complete!');
+}
+
+
+// ===================== REPORT GENERATION =====================
+function generateReport() {
+    if (!currentClient) {
+        showToast('Please complete intake and assessment first', 'error');
+        return;
+    }
+    if (!scores.ot || !scores.ot.severity) {
+        showToast('Please calculate scores first', 'error');
+        return;
+    }
+
+    const client = currentClient;
+    const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Header
+    document.getElementById('report-id').textContent = client.id;
+    document.getElementById('report-name').textContent = `${client.firstName} ${client.lastName}`;
+    document.getElementById('report-age').textContent = client.age;
+    document.getElementById('report-date').textContent = now;
+
+    // Executive Summary
+    const execSummary = generateExecutiveSummary(client);
+    document.getElementById('report-executive').innerHTML = execSummary;
+
+    // Domain Summaries
+    document.getElementById('report-ot-summary').innerHTML = generateDomainSummary('ot');
+    document.getElementById('report-st-summary').innerHTML = generateDomainSummary('st');
+    document.getElementById('report-bt-summary').innerHTML = generateDomainSummary('bt');
+
+    // Scores Table
+    document.getElementById('report-scores-body').innerHTML = generateScoresTable();
+
+    // SMART Goals
+    document.getElementById('report-goals').innerHTML = generateSMARTGoals();
+
+    // Intervention Guidelines
+    document.getElementById('report-intervention').innerHTML = generateInterventionGuidelines();
+
+    // Cross-Disciplinary
+    document.getElementById('report-cross').innerHTML = generateCrossDisciplinary();
+
+    showToast('Report generated successfully!');
+
+    // Auto-navigate to reports
+    setTimeout(() => {
+        document.querySelector('[onclick="navigateTo('reports')"]').click();
+    }, 300);
+}
+
+function generateExecutiveSummary(client) {
+    const sev = scores;
+    const highest = Object.entries(sev).sort((a, b) => b[1].percentage - a[1].percentage)[0];
+    const domainNames = { ot: 'Occupational Therapy', st: 'Speech-Language Therapy', bt: 'Behavior Therapy' };
+
+    return `
+        <p><strong>${client.firstName} ${client.lastName}</strong> (${client.age}) was evaluated using the Global Multidisciplinary Assessment Framework (GMAF-OSB) 
+        on ${new Date().toLocaleDateString()}. The assessment covered three core clinical domains: Occupational Therapy, Speech-Language Therapy, and Behavior Therapy.</p>
+        <p style="margin-top:12px;">Results indicate <strong>${sev[highest[0]].severity.toLowerCase()} concerns</strong> in the ${domainNames[highest[0]]} domain, 
+        with a severity index of ${highest[1].percentage.toFixed(1)}%. 
+        ${sev.ot.severity === 'Severe' || sev.st.severity === 'Severe' || sev.bt.severity === 'Severe' 
+            ? 'Given the severity profile, intensive multidisciplinary intervention is strongly recommended.' 
+            : 'A coordinated interdisciplinary approach is recommended to address identified areas of need.'}</p>
+        <p style="margin-top:12px;">Primary diagnoses on record: ${client.diagnoses ? client.diagnoses.join(', ') : 'None documented'}. 
+        Cultural/linguistic context: ${client.lang1 || 'English'} primary${client.lang2 && client.lang2 !== 'None' ? ', ' + client.lang2 + ' secondary' : ''}. 
+        Environmental factors have been mapped using the ICF framework across home, school, and community contexts.</p>
+    `;
+}
+
+function generateDomainSummary(domain) {
+    const names = { ot: 'Occupational Therapy', st: 'Speech-Language Therapy', bt: 'Behavior Therapy' };
+    const s = scores[domain];
+    if (!s || !s.severity) return '<p style="font-style:italic;">No assessment data available.</p>';
+
+    const concerns = [];
+    const data = assessmentData[domain];
+
+    // Find highest scoring items
+    const items = Object.entries(data).filter(([k, v]) => parseInt(v) >= 2).map(([k, v]) => {
+        // Find question text
+        for (const sub of Object.values(questionBanks[domain])) {
+            const q = sub.find(x => x.id === k);
+            if (q) return q.text;
+        }
+        return k;
+    });
+
+    return `
+        <p><strong>Severity:</strong> ${s.severity} (${s.percentage.toFixed(1)}%)</p>
+        <p style="margin-top:8px;"><strong>Standard Score:</strong> ${s.standard} | <strong>Percentile:</strong> ${s.percentile}th</p>
+        ${items.length > 0 ? `<p style="margin-top:8px;"><strong>Key Concerns:</strong></p><ul style="margin-top:4px;padding-left:16px;">${items.slice(0, 3).map(i => `<li>${i}</li>`).join('')}</ul>` : '<p style="margin-top:8px;">No significant concerns identified in this domain.</p>'}
+    `;
+}
+
+function generateScoresTable() {
+    const rows = [];
+    const domains = [
+        { key: 'ot', name: 'OT', subdomains: [
+            { key: 'sensory', name: 'Sensory Processing', inst: 'Sensory Profile 2' },
+            { key: 'motor', name: 'Motor Skills', inst: 'PDMS-3' },
+            { key: 'visual', name: 'Visual-Motor Integration', inst: 'Beery VMI-6' },
+            { key: 'adl', name: 'ADLs', inst: 'SFA' }
+        ]},
+        { key: 'st', name: 'ST', subdomains: [
+            { key: 'language', name: 'Receptive/Expressive Language', inst: 'CELF-5' },
+            { key: 'articulation', name: 'Articulation & Phonology', inst: 'GFTA-3' },
+            { key: 'pragmatic', name: 'Pragmatic Communication', inst: 'TOPL-2' },
+            { key: 'oral', name: 'Oral-Motor & Feeding', inst: 'Clinical Exam' }
+        ]},
+        { key: 'bt', name: 'Behavior', subdomains: [
+            { key: 'abc', name: 'Functional Behavior (ABC)', inst: 'ABC Data' },
+            { key: 'adaptive', name: 'Adaptive Behavior', inst: 'Vineland-3' },
+            { key: 'challenges', name: 'Behavioral Challenges', inst: 'Behavior Tracking' },
+            { key: 'autism', name: 'Autism Symptom Severity', inst: 'CARS-2' }
+        ]}
+    ];
+
+    domains.forEach(d => {
+        d.subdomains.forEach(sub => {
+            const questions = questionBanks[d.key][sub.key];
+            const answered = questions.filter(q => assessmentData[d.key][q.id] !== undefined);
+            const raw = answered.reduce((sum, q) => sum + (parseInt(assessmentData[d.key][q.id]) || 0), 0);
+            const max = questions.length * 3;
+            const pct = max > 0 ? (raw / max) * 100 : 0;
+            const scaled = Math.round(10 + (pct / 100) * 10);
+            const standard = Math.round(100 - (pct / 100) * 30);
+            const percentile = Math.round(100 - pct);
+            const sev = pct > 60 ? 'Severe' : pct > 30 ? 'Moderate' : 'Low';
+            const ae = pct > 50 ? 'Below expected' : pct > 25 ? 'Borderline' : 'Age-appropriate';
+
+            rows.push(`
+                <tr>
+                    <td style="font-weight:600;">${d.name}</td>
+                    <td>${sub.name}<br><span style="font-size:11px;color:var(--text-muted);">${sub.inst}</span></td>
+                    <td style="text-align:center;">${raw}/${max}</td>
+                    <td style="text-align:center;">${scaled}</td>
+                    <td style="text-align:center;">${standard}</td>
+                    <td style="text-align:center;">${percentile}</td>
+                    <td style="text-align:center;">${ae}</td>
+                    <td style="text-align:center;"><span class="badge ${sev === 'Severe' ? 'badge-severe' : sev === 'Moderate' ? 'badge-moderate' : 'badge-low'}">${sev}</span></td>
+                </tr>
+            `);
+        });
+    });
+
+    return rows.join('');
+}
+
+function generateSMARTGoals() {
+    const goals = [];
+    const s = scores;
+
+    if (s.ot && s.ot.percentage > 30) {
+        goals.push({
+            domain: 'OT - Sensory Integration',
+            text: `${currentClient.firstName} will tolerate 3 different tactile textures during sensory play for 5 minutes without avoidance behaviors, in 4 out of 5 opportunities, as measured by therapist observation over 4 weeks.`,
+            metric: '80% accuracy across 5 trials'
+        });
+        goals.push({
+            domain: 'OT - Motor Skills',
+            text: `${currentClient.firstName} will independently complete fine motor tasks (buttoning, zipping, using utensils) with 80% accuracy during structured ADL sessions, as measured by task analysis over 6 weeks.`,
+            metric: '80% independence on 5 consecutive sessions'
+        });
+    }
+
+    if (s.st && s.st.percentage > 30) {
+        goals.push({
+            domain: 'ST - Expressive Language',
+            text: `${currentClient.firstName} will use 4-5 word utterances to request preferred items and activities in structured and natural environments, with 80% accuracy across 10 opportunities per session.`,
+            metric: '80% accuracy across 10 opportunities'
+        });
+        goals.push({
+            domain: 'ST - Pragmatic Communication',
+            text: `${currentClient.firstName} will initiate and maintain a 3-exchange conversation with a peer using appropriate eye contact and turn-taking, in 3 out of 4 structured play sessions per week.`,
+            metric: '75% success rate over 4 weeks'
+        });
+    }
+
+    if (s.bt && s.bt.percentage > 30) {
+        goals.push({
+            domain: 'Behavior - Functional Communication',
+            text: `${currentClient.firstName} will use a functional communication response (FCR) to request a break instead of engaging in target challenging behavior, in 90% of opportunities when antecedents are present, over 6 weeks.`,
+            metric: '90% replacement behavior usage'
+        });
+        goals.push({
+            domain: 'Behavior - Adaptive Skills',
+            text: `${currentClient.firstName} will complete a 3-step morning routine (dress, brush teeth, pack bag) with only 1 verbal prompt, achieving independence in 4 out of 5 consecutive days.`,
+            metric: '80% independence with ≤1 prompt'
+        });
+    }
+
+    // Cross-disciplinary goals
+    if ((s.ot && s.ot.percentage > 40) && (s.bt && s.bt.percentage > 40)) {
+        goals.push({
+            domain: 'Cross-Disciplinary (OT + Behavior)',
+            text: `${currentClient.firstName} will use a sensory coping strategy (weighted lap pad, breathing exercise) when escalating behaviors are observed, reducing meltdown duration from 15 minutes to under 5 minutes, in 4 out of 5 incidents.`,
+            metric: '80% reduction in meltdown duration'
+        });
+    }
+
+    if ((s.st && s.st.percentage > 40) && (s.bt && s.bt.percentage > 40)) {
+        goals.push({
+            domain: 'Cross-Disciplinary (ST + Behavior)',
+            text: `${currentClient.firstName} will use a visual communication board to express frustration instead of engaging in physical aggression, achieving successful use in 8 out of 10 opportunities during demand tasks.`,
+            metric: '80% successful AAC use'
+        });
+    }
+
+    if (goals.length === 0) {
+        return '<p style="color:var(--text-muted);font-style:italic;">No significant concerns identified. Maintenance goals recommended.</p>';
+    }
+
+    return goals.map(g => `
+        <div class="goal-card">
+            <div class="goal-domain">${g.domain}</div>
+            <div class="goal-text">${g.text}</div>
+            <div class="goal-metric">Success Criteria: ${g.metric}</div>
+        </div>
+    `).join('');
+}
+
+function generateInterventionGuidelines() {
+    const guidelines = [];
+    const s = scores;
+
+    if (s.ot && s.ot.severity === 'Severe') {
+        guidelines.push({
+            domain: 'OT',
+            title: 'Intensive Sensory-Motor Program',
+            content: '3x weekly, 45-60 min sessions. Sensory Integration protocol with home sensory diet. Parent coaching 2x monthly. Re-evaluate in 12 weeks.'
+        });
+    } else if (s.ot && s.ot.severity === 'Moderate') {
+        guidelines.push({
+            domain: 'OT',
+            title: 'Targeted OT Intervention',
+            content: '2x weekly, 45 min sessions. Focus on identified deficit areas (sensory, motor, or ADL). Monthly parent consultation. Re-evaluate in 16 weeks.'
+        });
+    }
+
+    if (s.st && s.st.severity === 'Severe') {
+        guidelines.push({
+            domain: 'ST',
+            title: 'Intensive Language Intervention',
+            content: '3-4x weekly, 30-45 min sessions. Consider AAC evaluation. Parent-implemented language strategies 2x weekly. Re-evaluate in 12 weeks.'
+        });
+    } else if (s.st && s.st.severity === 'Moderate') {
+        guidelines.push({
+            domain: 'ST',
+            title: 'Targeted Speech-Language Therapy',
+            content: '2x weekly, 30-45 min sessions. Focus on identified language/articulation/pragmatic targets. Home practice program. Re-evaluate in 16 weeks.'
+        });
+    }
+
+    if (s.bt && s.bt.severity === 'Severe') {
+        guidelines.push({
+            domain: 'Behavior',
+            title: 'Intensive Behavior Support',
+            content: '5-10 hrs/week direct ABA therapy. Functional Behavior Assessment (FBA) required. BCBA supervision 2 hrs/week. Parent training mandatory. Re-evaluate in 12 weeks.'
+        });
+    } else if (s.bt && s.bt.severity === 'Moderate') {
+        guidelines.push({
+            domain: 'Behavior',
+            title: 'Targeted Behavior Intervention',
+            content: '3-5 hrs/week direct intervention. Behavior support plan development. Parent coaching 2x monthly. Re-evaluate in 16 weeks.'
+        });
+    }
+
+    if (guidelines.length === 0) {
+        return '<p style="color:var(--text-muted);font-style:italic;grid-column:1/-1;">No intensive intervention required. Monitor and consult as needed.</p>';
+    }
+
+    return guidelines.map(g => `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--primary);margin-bottom:8px;">${g.domain}</div>
+            <h4 style="font-weight:600;margin-bottom:8px;">${g.title}</h4>
+            <p style="font-size:13px;color:var(--text-muted);line-height:1.6;">${g.content}</p>
+        </div>
+    `).join('');
+}
+
+function generateCrossDisciplinary() {
+    const recs = [];
+    const s = scores;
+
+    if (s.ot && s.st && s.ot.percentage > 35 && s.st.percentage > 35) {
+        recs.push('Coordinate OT and ST sessions to address sensory-language interactions. Consider co-treatment sessions where sensory regulation precedes language targets.');
+    }
+    if (s.ot && s.bt && s.ot.percentage > 35 && s.bt.percentage > 35) {
+        recs.push('Integrate sensory strategies into behavior intervention plans. Ensure behavior therapists are trained on the client's sensory diet and calming protocols.');
+    }
+    if (s.st && s.bt && s.st.percentage > 35 && s.bt.percentage > 35) {
+        recs.push('Embed functional communication training (FCT) within behavior programming. Ensure all team members use consistent communication supports.');
+    }
+    if (s.ot && s.st && s.bt && s.ot.percentage > 30 && s.st.percentage > 30 && s.bt.percentage > 30) {
+        recs.push('Full multidisciplinary team meetings recommended weekly for the first month, then bi-weekly. Use shared data collection system across all disciplines.');
+    }
+
+    recs.push('Schedule monthly interdisciplinary case conferences to review progress across all domains and adjust integrated treatment plans.');
+    recs.push('Share assessment data with school team, pediatrician, and funding bodies using GMAF-OSB standardized report format.');
+
+    return `<ul style="padding-left:20px;line-height:2;">${recs.map(r => `<li>${r}</li>`).join('')}</ul>`;
+}
+
+// ===================== PDF EXPORT =====================
+async function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const element = document.getElementById('report-preview');
+
+    showToast('Generating PDF... Please wait');
+
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            windowWidth: 1200
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+        const imgX = (pdfWidth - imgWidth * ratio) / 2;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+            heightLeft -= pdfHeight;
+        }
+
+        const filename = `GMAF-OSB_Report_${currentClient ? currentClient.lastName : 'Export'}_${new Date().toISOString().split('T')[0]}.pdf`;
+        pdf.save(filename);
+        showToast('PDF exported successfully!');
+    } catch (err) {
+        console.error(err);
+        showToast('PDF export failed. Try printing to PDF instead.', 'error');
+    }
+}
+
+// ===================== UTILITIES =====================
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span>${message}</span>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+function showNewClientModal() {
+    document.getElementById('modal-title').textContent = 'Start New Assessment';
+    document.getElementById('modal-body').innerHTML = `
+        <p style="margin-bottom:16px;">Starting a new assessment will clear current progress. Are you sure?</p>
+        <div style="background:#f8fafc;border-radius:8px;padding:16px;">
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;"><strong>Tip:</strong> The assessment flow follows this sequence:</p>
+            <ol style="font-size:13px;color:var(--text-muted);padding-left:16px;line-height:2;">
+                <li>Universal Intake & Client Profile</li>
+                <li>Core Domain Assessment Matrix (OT, ST, Behavior)</li>
+                <li>Cross-Disciplinary Intersection Analysis</li>
+                <li>Automated Report & SMART Goal Generation</li>
+            </ol>
+        </div>
+    `;
+    document.querySelector('.modal-footer .btn-primary').onclick = function() {
+        closeModal();
+        navigateTo('intake');
+        document.querySelector('[onclick="navigateTo('intake')"]').click();
+    };
+    document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('active');
+}
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
