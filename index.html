@@ -1023,7 +1023,7 @@ const questionBanks = {
             { id: 'st_p2', text: 'Topic maintenance (stays on topic, introduces relevant shifts)', instrument: 'TOPL-2' },
             { id: 'st_p3', text: 'Turn-taking in conversation (waits, initiates, repairs breakdowns)', instrument: 'TOPL-2' },
             { id: 'st_p4', text: 'Nonverbal communication (gestures, facial expressions, body language)', instrument: 'TOPL-2' },
-            { id: 'st_p5', text: 'Social inference and perspective-taking (understands others' feelings/intentions)', instrument: 'TOPL-2' }
+            { id: 'st_p5', text: 'Social inference and perspective-taking (understands others\' feelings/intentions)', instrument: 'TOPL-2' }
         ],
         oral: [
             { id: 'st_o1', text: 'Oral structure integrity (tone, symmetry, range of motion)', instrument: 'Clinical Exam' },
@@ -1142,7 +1142,7 @@ function loadClient(id) {
     currentClient = clients.find(c => c.id === id);
     showToast(`Loaded client: ${currentClient.firstName} ${currentClient.lastName}`);
     navigateTo('assessment');
-    document.querySelector('[onclick="navigateTo('assessment')"]').click();
+    document.querySelector("[onclick=\"navigateTo('assessment')\"]").click();
 }
 
 // ===================== INTAKE =====================
@@ -1192,7 +1192,7 @@ function saveIntake() {
     updateStats();
 
     setTimeout(() => {
-        document.querySelector('[onclick="navigateTo('assessment')"]').click();
+        document.querySelector("[onclick=\"navigateTo('assessment')\"]").click();
     }, 800);
 }
 
@@ -1301,7 +1301,7 @@ function calculateScores() {
 
     showToast('Scores calculated! Navigate to Analysis to see results.');
     setTimeout(() => {
-        document.querySelector('[onclick="navigateTo('analysis')"]').click();
+        document.querySelector("[onclick=\"navigateTo('analysis')\"]").click();
         displaySeverityCards();
     }, 500);
 }
@@ -1444,7 +1444,7 @@ function generateReport() {
 
     // Auto-navigate to reports
     setTimeout(() => {
-        document.querySelector('[onclick="navigateTo('reports')"]').click();
+        document.querySelector("[onclick=\"navigateTo('reports')\"]").click();
     }, 300);
 }
 
@@ -1686,7 +1686,7 @@ function generateCrossDisciplinary() {
         recs.push('Coordinate OT and ST sessions to address sensory-language interactions. Consider co-treatment sessions where sensory regulation precedes language targets.');
     }
     if (s.ot && s.bt && s.ot.percentage > 35 && s.bt.percentage > 35) {
-        recs.push('Integrate sensory strategies into behavior intervention plans. Ensure behavior therapists are trained on the client's sensory diet and calming protocols.');
+        recs.push('Integrate sensory strategies into behavior intervention plans. Ensure behavior therapists are trained on the client\'s sensory diet and calming protocols.');
     }
     if (s.st && s.bt && s.st.percentage > 35 && s.bt.percentage > 35) {
         recs.push('Embed functional communication training (FCT) within behavior programming. Ensure all team members use consistent communication supports.');
@@ -1779,7 +1779,7 @@ function showNewClientModal() {
     document.querySelector('.modal-footer .btn-primary').onclick = function() {
         closeModal();
         navigateTo('intake');
-        document.querySelector('[onclick="navigateTo('intake')"]').click();
+        document.querySelector("[onclick=\"navigateTo('intake')\"]").click();
     };
     document.getElementById('modal-overlay').classList.add('active');
 }
